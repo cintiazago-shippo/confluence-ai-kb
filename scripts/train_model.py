@@ -1,6 +1,12 @@
 import sys
+import os
+from pathlib import Path
 
 sys.path.append('..')
+
+# Add the project root directory to Python path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
 
 from database.init_db import get_session
 from ai.embedder import DocumentEmbedder
