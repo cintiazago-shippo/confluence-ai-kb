@@ -10,6 +10,8 @@ cd confluence-ai-kb
 ```
 
 ### 2. Create Virtual Environment
+
+Make sure to install Python 3.12 for lib compatibility.
 ```bash
 # Create virtual environment
 python -m venv venv
@@ -28,7 +30,7 @@ venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 4. Setup PostgreSQL with pgvector
+### 4. Setup PostgreSQL with pgvector (if not using docker)
 ```bash
 # Connect to PostgreSQL
 psql -U postgres
@@ -44,6 +46,21 @@ CREATE EXTENSION vector;
 
 # Exit PostgreSQL
 \q
+```
+
+### 4.1 Setup PostgreSQL with Docker
+
+```
+cd confluence-ai-kb
+
+# Build and run in one command
+docker-compose up -d
+
+# Stop container
+docker-compose down
+
+# Run a one-off command
+docker-compose exec postgres psql -U postgres -d confluence_kb
 ```
 
 ### 5. Configure Environment
