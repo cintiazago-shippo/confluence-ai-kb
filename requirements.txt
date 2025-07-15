@@ -4,7 +4,7 @@ beautifulsoup4==4.12.2
 
 # Database
 psycopg2-binary==2.9.6
-sqlalchemy==2.0.23
+sqlalchemy==2.0.25
 alembic==1.13.0
 
 # AI/ML
@@ -20,3 +20,4 @@ python-dotenv==1.0.0
 requests==2.31.0
 tqdm==4.66.1
 pandas==2.1.4
+numpy==1.26.4

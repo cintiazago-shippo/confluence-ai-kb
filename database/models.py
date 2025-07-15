@@ -30,7 +30,7 @@ class DocumentChunk(Base):
     chunk_text = Column(Text, nullable=False)
     chunk_index = Column(Integer, nullable=False)
     embedding = Column(ARRAY(Float))  # For storing vector embeddings
-    metadata = Column(Text)  # JSON string for additional metadata
+    meta_data = Column(Text)  # JSON string for additional metadata
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
