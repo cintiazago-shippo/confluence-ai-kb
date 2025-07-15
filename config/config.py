@@ -13,7 +13,7 @@ class Config:
 
     # Database
     DB_HOST = os.getenv('DB_HOST', 'localhost')
-    DB_PORT = os.getenv('DB_PORT', '5433')
+    DB_PORT = os.getenv('DB_PORT', '5432')
     DB_NAME = os.getenv('DB_NAME', 'confluence_kb')
     DB_USER = os.getenv('DB_USER', 'postgres')
     DB_PASSWORD = os.getenv('DB_PASSWORD')
@@ -25,6 +25,9 @@ class Config:
     # AI
     ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY')
     OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+
+    # Claude model selection
+    CLAUDE_MODEL = os.getenv('CLAUDE_MODEL', 'claude-3-5-sonnet-20241022')
 
     # Embeddings
     EMBEDDING_MODEL = 'all-MiniLM-L6-v2'

@@ -1,22 +1,24 @@
 import anthropic
 from sentence_transformers import SentenceTransformer
+from sqlalchemy import text
 from database.models import DocumentChunk, QueryLog
 from config.config import Config
 import json
 import numpy as np
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
 
 class QueryEngine:
     def __init__(self, session):
-        config = Config()
+        self.config = Config()
         self.session = session
-        self.embedder = SentenceTransformer(config.EMBEDDING_MODEL)
+        self.embedder = SentenceTransformer(self.config.EMBEDDING_MODEL)
 
         # Initialize Anthropic client with error handling
-        api_key = config.ANTHROPIC_API_KEY
+        api_key = self.config.ANTHROPIC_API_KEY
         if not api_key or api_key == 'your-anthropic-api-key':
             logger.warning("Anthropic API key not set. AI responses will be limited.")
             self.client = None
@@ -73,7 +75,7 @@ class QueryEngine:
                     def __init__(self, chunk, similarity):
                         self.id = chunk.id
                         self.chunk_text = chunk.chunk_text
-                        self.metadata = chunk.metadata
+                        self.metadata = chunk.meta_data
                         self.similarity = similarity
 
                 results.append(Result(chunk, item['similarity']))
@@ -93,7 +95,7 @@ class QueryEngine:
         context_parts = []
         for chunk in relevant_chunks[:3]:  # Use top 3 chunks
             try:
-                metadata = json.loads(chunk.metadata) if chunk.metadata else {}
+                metadata = json.loads(chunk.meta_data) if chunk.meta_data else {}
                 page_title = metadata.get('page_title', 'Unknown')
                 context_parts.append(f"Source: {page_title}\n{chunk.chunk_text}")
             except:
@@ -116,7 +118,7 @@ Please provide a comprehensive answer based on the provided context. If the cont
 
                 # Generate response using Claude
                 response = self.client.messages.create(
-                    model="claude-3-sonnet-20240229",
+                    model=self.config.CLAUDE_MODEL,  # Use model from config
                     max_tokens=1000,
                     messages=[
                         {"role": "user", "content": prompt}
@@ -135,7 +137,7 @@ Please provide a comprehensive answer based on the provided context. If the cont
 
         for i, chunk in enumerate(relevant_chunks[:3], 1):
             try:
-                metadata = json.loads(chunk.metadata) if chunk.metadata else {}
+                metadata = json.loads(chunk.meta_data) if chunk.meta_data else {}
                 page_title = metadata.get('page_title', 'Unknown')
                 response += f"{i}. From '{page_title}':\n{chunk.chunk_text[:200]}...\n\n"
             except:
