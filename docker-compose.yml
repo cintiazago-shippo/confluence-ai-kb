@@ -1,0 +1,15 @@
+version: '3.8'
+services:
+  postgres:
+    build: .  # Build from Dockerfile in current directory
+    container_name: postgres-vector
+    environment:
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: confluence_kb
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
