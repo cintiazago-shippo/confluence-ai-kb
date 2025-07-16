@@ -4,7 +4,8 @@ Simple test script to verify Redis caching functionality
 """
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Add parent directory to path to import project modules
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config.cache import get_cache_manager
 import time

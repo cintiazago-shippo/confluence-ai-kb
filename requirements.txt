@@ -6,6 +6,7 @@ beautifulsoup4==4.12.2
 psycopg2-binary==2.9.9
 sqlalchemy==2.0.23
 alembic==1.13.0
+pgvector==0.2.4
 
 # AI/ML - Updated versions
 anthropic>=0.25.0  # Latest version

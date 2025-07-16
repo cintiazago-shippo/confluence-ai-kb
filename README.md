@@ -55,7 +55,7 @@ CREATE EXTENSION vector;
 ```
 cd confluence-ai-kb
 
-# Build and run all services (PostgreSQL + Redis)
+# Start all services (PostgreSQL with pgvector + Redis)
 docker-compose up -d
 
 # Stop all containers
@@ -66,6 +66,9 @@ docker-compose exec postgres psql -U postgres -d confluence_kb
 
 # Access Redis CLI
 docker-compose exec redis redis-cli
+
+# Verify pgvector extension is installed
+docker-compose exec postgres psql -U postgres -d confluence_kb -c "SELECT * FROM pg_extension WHERE extname = 'vector';"
 ```
 
 ### 5. Configure Environment

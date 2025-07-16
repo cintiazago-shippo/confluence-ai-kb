@@ -43,7 +43,7 @@ class DocumentEmbedder:
                     chunk_text=chunk_text,
                     chunk_index=idx,
                     embedding=embedding,
-                    metadata=json.dumps({
+                    meta_data=json.dumps({
                         'page_title': page.title,
                         'space_key': page.space_key,
                         'url': page.url

@@ -60,61 +60,100 @@ class QueryEngine:
             self.cache.set_query_embedding(query, query_embedding)
             logger.info("Generated and cached query embedding")
 
-        # For PostgreSQL without pgvector, we'll use a simpler approach
-        # Get all chunks and calculate similarity in Python
+        # Use native pgvector for efficient vector similarity search
         try:
-            chunks = self.session.query(DocumentChunk).all()
+            # Convert query embedding to numpy array for pgvector
+            import numpy as np
+            query_vector = np.array(query_embedding)
+            
+            # Use cosine distance operator (<->) for similarity search
+            # Note: pgvector uses distance (lower is better), so we need to convert to similarity
+            results = self.session.query(
+                DocumentChunk,
+                (1 - DocumentChunk.embedding.cosine_distance(query_vector)).label('similarity')
+            ).filter(
+                DocumentChunk.embedding.is_not(None)
+            ).order_by(
+                DocumentChunk.embedding.cosine_distance(query_vector)
+            ).limit(
+                self.config.VECTOR_SEARCH_LIMIT
+            ).all()
 
-            if not chunks:
+            if not results:
                 logger.warning("No document chunks found in database")
                 return []
 
-            # Calculate similarities
-            similarities = []
-            for chunk in chunks:
-                if chunk.embedding:
-                    # Calculate cosine similarity
-                    chunk_embedding = np.array(chunk.embedding)
-                    query_embedding_np = np.array(query_embedding)
+            # Filter by similarity threshold and take top_k
+            filtered_results = []
+            for chunk, similarity in results:
+                if similarity >= self.config.SIMILARITY_THRESHOLD:
+                    # Create a simple object that matches expected format
+                    class Result:
+                        def __init__(self, chunk, similarity):
+                            self.id = chunk.id
+                            self.chunk_text = chunk.chunk_text
+                            self.metadata = chunk.meta_data
+                            self.similarity = float(similarity)
 
-                    # Cosine similarity
-                    similarity = np.dot(chunk_embedding, query_embedding_np) / (
-                            np.linalg.norm(chunk_embedding) * np.linalg.norm(query_embedding_np)
-                    )
+                    filtered_results.append(Result(chunk, similarity))
+                    
+                    # Stop when we have enough results
+                    if len(filtered_results) >= top_k:
+                        break
 
-                    similarities.append({
-                        'chunk': chunk,
-                        'similarity': float(similarity)
-                    })
-
-            # Sort by similarity and get top k
-            similarities.sort(key=lambda x: x['similarity'], reverse=True)
-            top_chunks = similarities[:top_k]
-
-            # Return in expected format
-            results = []
-            for item in top_chunks:
-                chunk = item['chunk']
-
-                # Create a simple object that matches expected format
-                class Result:
-                    def __init__(self, chunk, similarity):
-                        self.id = chunk.id
-                        self.chunk_text = chunk.chunk_text
-                        self.metadata = chunk.meta_data
-                        self.similarity = similarity
-
-                results.append(Result(chunk, item['similarity']))
+            logger.info(f"Found {len(filtered_results)} relevant chunks using pgvector search")
 
             # Cache the search results
-            self.cache.set_search_results(query, results, top_k)
+            self.cache.set_search_results(query, filtered_results, top_k)
             logger.info(f"Cached search results for query: {query[:50]}...")
 
-            return results
+            return filtered_results
 
         except Exception as e:
-            logger.error(f"Error finding relevant chunks: {e}")
-            return []
+            logger.error(f"Error in pgvector search: {e}")
+            logger.info("Falling back to basic search...")
+            
+            # Fallback to basic search without vector operations
+            try:
+                chunks = self.session.query(DocumentChunk).filter(
+                    DocumentChunk.embedding.is_not(None)
+                ).limit(100).all()
+                
+                if not chunks:
+                    return []
+                    
+                # Simple text matching fallback
+                results = []
+                for chunk in chunks:
+                    # Basic text similarity as fallback
+                    query_lower = query.lower()
+                    chunk_lower = chunk.chunk_text.lower()
+                    
+                    # Simple word overlap scoring
+                    query_words = set(query_lower.split())
+                    chunk_words = set(chunk_lower.split())
+                    
+                    if query_words and chunk_words:
+                        overlap = len(query_words.intersection(chunk_words))
+                        similarity = overlap / len(query_words.union(chunk_words))
+                        
+                        if similarity > 0.1:  # Basic threshold
+                            class Result:
+                                def __init__(self, chunk, similarity):
+                                    self.id = chunk.id
+                                    self.chunk_text = chunk.chunk_text
+                                    self.metadata = chunk.meta_data
+                                    self.similarity = float(similarity)
+                            
+                            results.append(Result(chunk, similarity))
+                
+                # Sort by similarity and take top_k
+                results.sort(key=lambda x: x.similarity, reverse=True)
+                return results[:top_k]
+                
+            except Exception as e2:
+                logger.error(f"Fallback search also failed: {e2}")
+                return []
 
     def generate_response(self, query, relevant_chunks):
         """Generate a response using Claude API or fallback method"""

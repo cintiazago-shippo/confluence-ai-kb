@@ -31,8 +31,13 @@ class Config:
 
     # Embeddings
     EMBEDDING_MODEL = 'all-MiniLM-L6-v2'
+    EMBEDDING_DIMENSION = 384  # all-MiniLM-L6-v2 produces 384-dimensional embeddings
     CHUNK_SIZE = 1000
     CHUNK_OVERLAP = 200
+    
+    # Vector Search
+    VECTOR_SEARCH_LIMIT = 100  # Maximum results to retrieve before filtering
+    SIMILARITY_THRESHOLD = 0.5  # Minimum similarity score for results
 
     # Redis Cache
     REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')

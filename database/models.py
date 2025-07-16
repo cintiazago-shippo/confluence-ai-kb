@@ -2,6 +2,7 @@ from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, F
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.dialects.postgresql import UUID, ARRAY
+from pgvector.sqlalchemy import Vector
 import uuid
 from datetime import datetime
 
@@ -29,7 +30,7 @@ class DocumentChunk(Base):
     page_id = Column(UUID(as_uuid=True), nullable=False)
     chunk_text = Column(Text, nullable=False)
     chunk_index = Column(Integer, nullable=False)
-    embedding = Column(ARRAY(Float))  # For storing vector embeddings
+    embedding = Column(Vector(384))  # pgvector type for 384-dimensional embeddings
     meta_data = Column(Text)  # JSON string for additional metadata
     created_at = Column(DateTime, default=datetime.utcnow)
 
