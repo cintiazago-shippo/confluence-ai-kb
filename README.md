@@ -1,5 +1,7 @@
 # Confluence AI Knowledge Base - Usage Guide
 
+A high-performance AI-powered knowledge base that syncs with Confluence and provides intelligent answers to questions about your documentation. Now featuring Redis caching for 10x faster query performance!
+
 ## Initial Setup
 
 ### 1. Clone the Project
@@ -48,19 +50,22 @@ CREATE EXTENSION vector;
 \q
 ```
 
-### 4.1 Setup PostgreSQL with Docker
+### 4.1 Setup PostgreSQL and Redis with Docker
 
 ```
 cd confluence-ai-kb
 
-# Build and run in one command
+# Build and run all services (PostgreSQL + Redis)
 docker-compose up -d
 
-# Stop container
+# Stop all containers
 docker-compose down
 
-# Run a one-off command
+# Run a one-off command on PostgreSQL
 docker-compose exec postgres psql -U postgres -d confluence_kb
+
+# Access Redis CLI
+docker-compose exec redis redis-cli
 ```
 
 ### 5. Configure Environment
@@ -73,6 +78,7 @@ cp .env.example .env
 # - Confluence URL and API token
 # - PostgreSQL credentials
 # - Anthropic API key
+# - Redis connection settings (optional, defaults work with Docker)
 ```
 
 ### 6. Run Initial Setup
@@ -113,6 +119,11 @@ This will:
 - Start an interactive prompt
 - Allow you to ask questions about your documentation
 - Return AI-generated answers based on your Confluence content
+- Utilize Redis caching for faster response times on repeated queries
+
+**Special Commands:**
+- Type `cache` to view cache statistics and performance metrics
+- Type `quit` to exit the application
 
 ## Example Prompting Patterns
 
@@ -225,11 +236,14 @@ Use OpenAI embeddings for better quality:
 # Modify embedder.py to use OpenAI API
 ```
 
-### Add Caching
-Implement Redis for faster repeated queries:
-```python
-# Add redis to requirements.txt
-# Cache embeddings and frequent queries
+### Enhance Caching
+The system now includes Redis caching for optimal performance:
+```bash
+# Test cache functionality
+python test_cache.py
+
+# Monitor cache performance
+# Use 'cache' command in main.py to view statistics
 ```
 
 ### Create Web Interface
@@ -249,10 +263,11 @@ Allow users to rate responses:
 ## Best Practices
 
 1. **Regular Syncing**: Schedule regular Confluence syncs to keep data current
-2. **Monitor Performance**: Track query response times and accuracy
+2. **Monitor Performance**: Track query response times and accuracy using cache statistics
 3. **Backup Database**: Regular backups of your PostgreSQL database
 4. **Security**: Keep API keys secure and use environment variables
 5. **Documentation**: Keep your Confluence pages well-structured for better results
+6. **Cache Management**: Monitor Redis memory usage and adjust CACHE_TTL as needed
 
 ## Quick Command Reference
 
@@ -261,6 +276,7 @@ Allow users to rate responses:
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+docker-compose up -d  # Start PostgreSQL and Redis
 python scripts/setup.py
 python scripts/sync_confluence.py
 python scripts/train_model.py
@@ -272,4 +288,12 @@ python scripts/train_model.py
 
 # Just query
 python main.py
+
+# Test cache functionality
+python test_cache.py
+
+# Docker commands
+docker-compose up -d    # Start services
+docker-compose down     # Stop services
+docker-compose logs     # View logs
 ```

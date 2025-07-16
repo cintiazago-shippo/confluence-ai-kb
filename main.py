@@ -18,13 +18,27 @@ def main():
     query_engine = QueryEngine(session)
 
     print("Welcome to Confluence AI Knowledge Base!")
-    print("Type 'quit' to exit\n")
+    print("Type 'quit' to exit")
+    print("Type 'cache' to view cache statistics\n")
 
     while True:
         question = input("Ask a question: ").strip()
 
         if question.lower() == 'quit':
             break
+
+        if question.lower() == 'cache':
+            stats = query_engine.cache.get_stats()
+            print(f"\nCache Statistics:")
+            print(f"  Hits: {stats['hits']}")
+            print(f"  Misses: {stats['misses']}")
+            print(f"  Hit Rate: {stats['hit_rate']:.2%}")
+            print(f"  Cache Sets: {stats['sets']}")
+            print(f"  Errors: {stats['errors']}")
+            if 'redis_memory_used' in stats:
+                print(f"  Redis Memory: {stats['redis_memory_used']}")
+            print(f"  Cache Available: {query_engine.cache.is_available()}\n")
+            continue
 
         if not question:
             continue

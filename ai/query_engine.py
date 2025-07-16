@@ -3,10 +3,12 @@ from sentence_transformers import SentenceTransformer
 from sqlalchemy import text
 from database.models import DocumentChunk, QueryLog
 from config.config import Config
+from config.cache import get_cache_manager
 import json
 import numpy as np
 import logging
 import os
+import hashlib
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +18,7 @@ class QueryEngine:
         self.config = Config()
         self.session = session
         self.embedder = SentenceTransformer(self.config.EMBEDDING_MODEL)
+        self.cache = get_cache_manager()
 
         # Initialize Anthropic client with error handling
         api_key = self.config.ANTHROPIC_API_KEY
@@ -31,8 +34,31 @@ class QueryEngine:
 
     def find_relevant_chunks(self, query, top_k=5):
         """Find the most relevant chunks for a query using vector similarity"""
-        # Generate query embedding
-        query_embedding = self.embedder.encode(query).tolist()
+        
+        # Check cache first for search results
+        cached_results = self.cache.get_search_results(query, top_k)
+        if cached_results:
+            logger.info("Retrieved search results from cache")
+            # Reconstruct Result objects from cached data
+            results = []
+            for item in cached_results:
+                class Result:
+                    def __init__(self, data):
+                        self.id = data['id']
+                        self.chunk_text = data['chunk_text']
+                        self.metadata = data['metadata']
+                        self.similarity = data['similarity']
+                results.append(Result(item))
+            return results
+        
+        # Generate query embedding (check cache first)
+        query_embedding = self.cache.get_query_embedding(query)
+        if query_embedding:
+            logger.info("Retrieved query embedding from cache")
+        else:
+            query_embedding = self.embedder.encode(query).tolist()
+            self.cache.set_query_embedding(query, query_embedding)
+            logger.info("Generated and cached query embedding")
 
         # For PostgreSQL without pgvector, we'll use a simpler approach
         # Get all chunks and calculate similarity in Python
@@ -80,6 +106,10 @@ class QueryEngine:
 
                 results.append(Result(chunk, item['similarity']))
 
+            # Cache the search results
+            self.cache.set_search_results(query, results, top_k)
+            logger.info(f"Cached search results for query: {query[:50]}...")
+
             return results
 
         except Exception as e:
@@ -102,6 +132,15 @@ class QueryEngine:
                 context_parts.append(chunk.chunk_text)
 
         context = "\n\n".join(context_parts)
+        
+        # Create a hash of the context for cache key
+        context_hash = hashlib.md5(context.encode()).hexdigest()
+        
+        # Check cache first for AI response
+        cached_response = self.cache.get_ai_response(query, context_hash)
+        if cached_response:
+            logger.info("Retrieved AI response from cache")
+            return cached_response
 
         # If Anthropic client is available, use it
         if self.client:
@@ -125,7 +164,13 @@ Please provide a comprehensive answer based on the provided context. If the cont
                     ]
                 )
 
-                return response.content[0].text
+                ai_response = response.content[0].text
+                
+                # Cache the AI response
+                self.cache.set_ai_response(query, context_hash, ai_response)
+                logger.info("Generated and cached AI response")
+                
+                return ai_response
 
             except Exception as e:
                 logger.error(f"Error generating AI response: {e}")
@@ -145,6 +190,10 @@ Please provide a comprehensive answer based on the provided context. If the cont
 
         response += f"\nSimilarity scores: {[f'{chunk.similarity:.2f}' for chunk in relevant_chunks[:3]]}"
 
+        # Cache the fallback response too
+        self.cache.set_ai_response(query, context_hash, response)
+        logger.info("Generated and cached fallback response")
+        
         return response
 
     def query(self, question):

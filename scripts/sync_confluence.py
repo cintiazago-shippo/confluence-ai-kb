@@ -9,6 +9,7 @@ from confluence.client import ConfluenceClient
 from confluence.extractor import ContentExtractor
 from database.init_db import get_session, init_database
 from database.models import ConfluencePage
+from config.cache import get_cache_manager
 from datetime import datetime
 import logging
 
@@ -23,6 +24,7 @@ def sync_confluence_pages():
 
     client = ConfluenceClient()
     session = get_session()
+    cache = get_cache_manager()
 
     try:
         # Get all pages
@@ -72,6 +74,12 @@ def sync_confluence_pages():
                 continue
 
         session.commit()
+        
+        # Invalidate cache after successful sync
+        if synced_count > 0 or updated_count > 0:
+            cache.invalidate_content_cache()
+            logger.info("Cache invalidated due to content updates")
+        
         logger.info(f"Sync completed successfully!")
         logger.info(f"Added {synced_count} new pages, updated {updated_count} existing pages")
 

@@ -33,3 +33,10 @@ class Config:
     EMBEDDING_MODEL = 'all-MiniLM-L6-v2'
     CHUNK_SIZE = 1000
     CHUNK_OVERLAP = 200
+
+    # Redis Cache
+    REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
+    REDIS_PORT = int(os.getenv('REDIS_PORT', '6379'))
+    REDIS_DB = int(os.getenv('REDIS_DB', '0'))
+    REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
+    CACHE_TTL = int(os.getenv('CACHE_TTL', '3600'))  # 1 hour default

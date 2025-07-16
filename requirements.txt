@@ -26,3 +26,6 @@ tqdm==4.66.1
 pandas==2.1.4
 numpy<2.0.0
 httpx  # Required by newer anthropic versions
+
+# Caching
+redis==5.0.1
