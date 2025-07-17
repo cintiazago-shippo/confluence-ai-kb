@@ -188,14 +188,14 @@ def analyze_index_usage():
         result = session.execute(text("""
             SELECT 
                 schemaname,
-                tablename,
-                indexname,
+                relname,
+                indexrelname,
                 idx_scan,
                 idx_tup_read,
                 idx_tup_fetch
             FROM pg_stat_user_indexes 
-            WHERE tablename = 'document_chunks' 
-            AND indexname LIKE '%embedding%'
+            WHERE relname = 'document_chunks' 
+            AND indexrelname LIKE '%embedding%'
         """))
         
         stats = result.fetchall()
