@@ -28,7 +28,7 @@ class ConfluenceClient:
                 self.space_key,
                 start=start,
                 limit=limit_per_request,
-                expand='body.storage,version'
+                expand='body.storage,version,space'
             )
 
             pages.extend(results)
@@ -49,6 +49,6 @@ class ConfluenceClient:
         """Get the content of a specific page"""
         page = self.confluence.get_page_by_id(
             page_id,
-            expand='body.storage,version'
+            expand='body.storage,version,space'
         )
         return page
